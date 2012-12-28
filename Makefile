@@ -1,4 +1,4 @@
-REPO 		?= riak
+REPO		?= riak
 
 .PHONY: rel stagedevrel deps
 
@@ -16,8 +16,8 @@ clean: testclean
 distclean: clean devclean relclean ballclean
 	./rebar delete-deps
 
-generate:
-	./rebar generate
+generate: compile
+	@./relcool -o ./rel/riak/ ./rel/relcool.config
 
 
 TEST_LOG_FILE := eunit.log
@@ -27,14 +27,14 @@ testclean:
 # Test each dependency individually in its own VM
 test: deps compile testclean
 	@$(foreach dep, \
-            $(wildcard deps/*), \
-               (cd $(dep) && ../../rebar eunit deps_dir=.. skip_deps=true)  \
-               || echo "Eunit: $(notdir $(dep)) FAILED" >> $(TEST_LOG_FILE);)
+			$(wildcard deps/*), \
+			   (cd $(dep) && ../../rebar eunit deps_dir=.. skip_deps=true)  \
+			   || echo "Eunit: $(notdir $(dep)) FAILED" >> $(TEST_LOG_FILE);)
 	./rebar eunit skip_deps=true
 	@if test -s $(TEST_LOG_FILE) ; then \
-             cat $(TEST_LOG_FILE) && \
-             exit `wc -l < $(TEST_LOG_FILE)`; \
-        fi
+			 cat $(TEST_LOG_FILE) && \
+			 exit `wc -l < $(TEST_LOG_FILE)`; \
+		fi
 
 ##
 ## Release targets
@@ -128,7 +128,7 @@ dialyzer: compile
 	@echo
 	@sleep 1
 	dialyzer -Wno_return --plt $(COMBO_PLT) deps/*/ebin | \
-	    fgrep -v -f ./dialyzer.ignore-warnings
+		fgrep -v -f ./dialyzer.ignore-warnings
 
 cleanplt:
 	@echo
@@ -148,11 +148,11 @@ cleanplt:
 #                                 Last tag:          riak-1.1.0pre1
 #                                 Commits since tag: 27
 #                                 Hash of commit:    g1170096
-REPO_TAG 	:= $(shell git describe --tags)
+REPO_TAG	:= $(shell git describe --tags)
 
 # Split off repo name
 # Changes to 1.0.3 or 1.1.0pre1-27-g1170096 from example above
-REVISION 	?= $(shell echo $(REPO_TAG) | sed -e 's/^$(REPO)-//')
+REVISION	?= $(shell echo $(REPO_TAG) | sed -e 's/^$(REPO)-//')
 
 # Primary version identifier, strip off commmit information
 # Changes to 1.0.3 or 1.1.0pre1 from example above
@@ -172,16 +172,16 @@ archive_git = git archive --format=tar --prefix=$(1)/ HEAD | (cd $(2) && tar xf 
 CLONEDIR ?= riak-clone
 MANIFEST_FILE ?= dependency_manifest.git
 get_dist_deps = mkdir distdir && \
-                git clone . distdir/$(CLONEDIR) && \
-                cd distdir/$(CLONEDIR) && \
-                git checkout $(REPO_TAG) && \
-                $(MAKE) deps && \
-                echo "- Dependencies and their tags at build time of $(REPO) at $(REPO_TAG)" > $(MANIFEST_FILE) && \
-                for dep in deps/*; do \
-                    cd $${dep} && \
-                    printf "$${dep} version `git describe --long --tags 2>/dev/null || git rev-parse HEAD`\n" >> ../../$(MANIFEST_FILE) && \
-                    cd ../..; done && \
-                LC_ALL=POSIX && export LC_ALL && sort $(MANIFEST_FILE) > $(MANIFEST_FILE).tmp && mv $(MANIFEST_FILE).tmp $(MANIFEST_FILE);
+				git clone . distdir/$(CLONEDIR) && \
+				cd distdir/$(CLONEDIR) && \
+				git checkout $(REPO_TAG) && \
+				$(MAKE) deps && \
+				echo "- Dependencies and their tags at build time of $(REPO) at $(REPO_TAG)" > $(MANIFEST_FILE) && \
+				for dep in deps/*; do \
+					cd $${dep} && \
+					printf "$${dep} version `git describe --long --tags 2>/dev/null || git rev-parse HEAD`\n" >> ../../$(MANIFEST_FILE) && \
+					cd ../..; done && \
+				LC_ALL=POSIX && export LC_ALL && sort $(MANIFEST_FILE) > $(MANIFEST_FILE).tmp && mv $(MANIFEST_FILE).tmp $(MANIFEST_FILE);
 
 
 # Name resulting directory & tar file based on current status of the git tag
@@ -202,15 +202,15 @@ endif
 # The vsn.git file is required by rebar to be able to build from the resulting
 #  tar file
 build_clean_dir = cd distdir/$(CLONEDIR) && \
-                  $(call archive_git,$(DISTNAME),..) && \
-                  cp $(MANIFEST_FILE) ../$(DISTNAME)/ && \
-                  mkdir ../$(DISTNAME)/deps && \
-                  for dep in deps/*; do \
-                      cd $${dep} && \
-                      $(call archive_git,$${dep},../../../$(DISTNAME)) && \
-                      mkdir -p ../../../$(DISTNAME)/$${dep}/priv && \
-                      printf "`git describe --long --tags 2>/dev/null || git rev-parse HEAD`" > ../../../$(DISTNAME)/$${dep}/priv/vsn.git && \
-                      cd ../..; done
+				  $(call archive_git,$(DISTNAME),..) && \
+				  cp $(MANIFEST_FILE) ../$(DISTNAME)/ && \
+				  mkdir ../$(DISTNAME)/deps && \
+				  for dep in deps/*; do \
+					  cd $${dep} && \
+					  $(call archive_git,$${dep},../../../$(DISTNAME)) && \
+					  mkdir -p ../../../$(DISTNAME)/$${dep}/priv && \
+					  printf "`git describe --long --tags 2>/dev/null || git rev-parse HEAD`" > ../../../$(DISTNAME)/$${dep}/priv/vsn.git && \
+					  cd ../..; done
 
 
 distdir/$(CLONEDIR)/$(MANIFEST_FILE):

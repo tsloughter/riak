@@ -82,9 +82,8 @@ fi
 SCRIPT=`basename $0`
 
 # Parse out release and erts info
-START_ERL=`cat $RUNNER_BASE_DIR/releases/start_erl.data`
-ERTS_VSN=${START_ERL% *}
-APP_VSN=${START_ERL#* }
+ERTS_VSN={{erts_vsn}}
+REL_VSN={{rel_vsn}}
 
 # Add ERTS bin dir to our path
 ERTS_PATH=$RUNNER_BASE_DIR/erts-$ERTS_VSN/bin
@@ -263,7 +262,7 @@ case "$1" in
         BINDIR=$ROOTDIR/erts-$ERTS_VSN/bin
         EMU=beam
         PROGNAME=`echo $0 | sed 's/.*\///'`
-        CMD="$BINDIR/erlexec -boot $RUNNER_BASE_DIR/releases/$APP_VSN/$SCRIPT \
+        CMD="$BINDIR/erlexec -boot $RUNNER_BASE_DIR/releases/{{release_name}}-$REL_VSN/$SCRIPT \
             -embedded -config $RUNNER_ETC_DIR/app.config \
             -pa $RUNNER_LIB_DIR/basho-patches \
             -args_file $RUNNER_ETC_DIR/vm.args -- ${1+"$@"}"
